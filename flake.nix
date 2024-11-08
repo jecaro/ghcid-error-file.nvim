@@ -3,40 +3,58 @@
 
   outputs = { self, nixpkgs }:
     let
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      nvimWithMini =
-        let
-          config = pkgs.neovimUtils.makeNeovimConfig {
-            plugins = [
-              pkgs.vimPlugins.mini-nvim
-            ];
-          };
-        in
-        pkgs.wrapNeovimUnstable pkgs.neovim-unwrapped config;
+      supportedSystems = [ "x86_64-linux" "x86_64-darwin" ];
+
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
+
+      nixpkgsFor = forAllSystems (system: import nixpkgs {
+        inherit system;
+        overlays = [ self.overlays.default ];
+      });
     in
     {
-      packages.x86_64-linux.default = pkgs.vimUtils.buildVimPlugin {
-        pname = "ghcid-error-file-nvim";
-        version = "0.0.1";
-        src = ./src;
-      };
+      packages = forAllSystems
+        (system:
+          {
+            default = nixpkgsFor.${system}.vimPlugins.ghcid-error-file-nvim;
+          });
 
-      checks.x86_64-linux.default = pkgs.runCommand "check" { } ''
-        cd ${self}
+      checks = forAllSystems (system:
+        let
+          pkgs = nixpkgsFor.${system};
+          nvimWithMini =
+            let
+              config = pkgs.neovimUtils.makeNeovimConfig {
+                plugins = [
+                  pkgs.vimPlugins.mini-nvim
+                ];
+              };
+            in
+            pkgs.wrapNeovimUnstable pkgs.neovim-unwrapped config;
+        in
+        {
+          default = pkgs.runCommand "check" { } ''
+            cd ${self}
 
-        ${nvimWithMini}/bin/nvim \
-          --headless \
-          --noplugin \
-          -u tests.lua \
-          -c 'lua MiniTest.run()'
+            ${nvimWithMini}/bin/nvim \
+              --headless \
+              --noplugin \
+              -u tests.lua \
+              -c 'lua MiniTest.run()'
 
-        touch $out
-      '';
+            touch $out
+          '';
+        });
 
       overlays.default = final: prev:
         {
           vimPlugins = prev.vimPlugins // {
-            ghcid-error-file-nvim = self.defaultPackage.x86_64-linux;
+            ghcid-error-file-nvim =
+              prev.vimUtils.buildVimPlugin {
+                pname = "ghcid-error-file-nvim";
+                version = "0.0.1";
+                src = ./src;
+              };
           };
         };
     };
