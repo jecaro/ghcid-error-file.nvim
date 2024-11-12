@@ -53,7 +53,7 @@
               prev.vimUtils.buildVimPlugin {
                 pname = "ghcid-error-file-nvim";
                 version = "0.0.1";
-                src = ./src;
+                src = ./.;
               };
           };
         };
