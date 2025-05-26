@@ -1,5 +1,5 @@
 {
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
   outputs = { self, nixpkgs }:
     let
@@ -40,7 +40,7 @@
               --headless \
               --noplugin \
               -u tests.lua \
-              -c 'lua MiniTest.run()'
+              -c 'lua MiniTest.run();'
 
             touch $out
           '';
@@ -54,6 +54,7 @@
                 pname = "ghcid-error-file-nvim";
                 version = "0.0.1";
                 src = ./.;
+                nvimRequireCheck = "ghcid-error-file";
               };
           };
         };
