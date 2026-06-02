@@ -1,5 +1,5 @@
 {
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
 
   outputs = { self, nixpkgs }:
     let
@@ -22,15 +22,9 @@
       checks = forAllSystems (system:
         let
           pkgs = nixpkgsFor.${system};
-          nvimWithMini =
-            let
-              config = pkgs.neovimUtils.makeNeovimConfig {
-                plugins = [
-                  pkgs.vimPlugins.mini-nvim
-                ];
-              };
-            in
-            pkgs.wrapNeovimUnstable pkgs.neovim-unwrapped config;
+          nvimWithMini = pkgs.wrapNeovim pkgs.neovim-unwrapped {
+            configure.packages.default.start = [ pkgs.vimPlugins.mini-nvim ];
+          };
         in
         {
           default = pkgs.runCommand "check" { } ''
